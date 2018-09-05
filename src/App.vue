@@ -3,8 +3,8 @@
         <Account></Account>
         <img alt="Vue logo" src="./assets/logo.png"/>
         <SourceInput></SourceInput>
-        <List></List>
         <Player></Player>
+        <List></List>
     </div>
 </template>
 
@@ -108,6 +108,5 @@
         -moz-osx-font-smoothing: grayscale;
         text-align: center;
         color: #2c3e50;
-        margin-top: 60px;
     }
 </style>

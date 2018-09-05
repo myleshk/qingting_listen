@@ -5,12 +5,17 @@ import BootstrapVue from 'bootstrap-vue'
 import axios from 'axios'
 import VueAxios from 'vue-axios'
 import VueCookies from 'vue-cookies'
+import APlayer from '@moefe/vue-aplayer';
 
 Vue.config.productionTip = false;
 Vue.use(BootstrapVue);
 Vue.use(VueRouter);
 Vue.use(VueAxios, axios);
 Vue.use(VueCookies);
+Vue.use(APlayer, {
+    defaultCover: '',
+    productionTip: true,
+});
 
 // create event bus
 export const serverBus = new Vue();

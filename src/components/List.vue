@@ -45,7 +45,7 @@
                         </button>
                         <span v-if="!chapter.file_path" class="badge badge-danger">收费</span>
                     </td>
-                    <td>{{Math.round(chapter.duration/60)}}分{{Math.round(chapter.duration%60)}}秒</td>
+                    <td>{{formatSeconds(chapter.duration)}}</td>
                     <td>{{chapter.playcount}}</td>
                     <td>{{chapter.update_time}}</td>
                 </tr>
@@ -113,6 +113,17 @@
             this.loadChapters()
         },
         methods: {
+            formatSeconds(seconds) {
+                let secOnly = Math.round(seconds % 60);
+                let minOnly = Math.floor(seconds / 60 % 60);
+                let hourOnly = Math.floor(seconds / 3600);
+
+                secOnly = secOnly > 10 ? secOnly : (secOnly > 0 ? ('0' + secOnly) : '00');
+                minOnly = minOnly > 10 ? minOnly : (minOnly > 0 ? ('0' + minOnly) : '00');
+                hourOnly = hourOnly ? hourOnly : '';
+
+                return hourOnly ? hourOnly + ':' : (minOnly + ':' + secOnly)
+            },
             loadPageFromParent() {
                 this.page = parseInt(this.$parent.page);
             },
@@ -161,7 +172,7 @@
                 }
             },
             play: function (chapter) {
-                serverBus.$emit('play', chapter);
+                serverBus.$emit('play', chapter, this.channel);
             }
         }
     }
@@ -177,8 +188,8 @@
     }
 
     img.album {
-        width: 170px;
-        height: 170px;
+        width: 100px;
+        height: 100px;
         border-radius: 1px;
     }
 
@@ -200,7 +211,11 @@
         font-size: 13px;
     }
 
-    a {
-        color: #42b983;
+    table td {
+        font-size: 12px;
+    }
+
+    table th {
+        font-size: 14px;
     }
 </style>
