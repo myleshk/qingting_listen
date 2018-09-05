@@ -19,6 +19,3 @@ npm run build
 ```
 npm run lint
 ```
-
-#TODO:
-- Program not loaded when first submit
