@@ -19,3 +19,6 @@ npm run build
 ```
 npm run lint
 ```
+
+
+####TODO: There is a bug if you are in different page than playing
