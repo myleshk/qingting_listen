@@ -1,6 +1,6 @@
 <template>
     <div class="player-wrapper">
-        <aplayer :audio="audio" autoplay loop="none" theme="#000000"></aplayer>
+        <aplayer :audio="audio" @ended="next" loop="none" autoplay theme="#000000"></aplayer>
     </div>
 </template>
 
@@ -19,18 +19,17 @@
         },
         computed: {
             audio: function () {
-                if(this.currentTargetURL) {
-                    return [{
+                if (this.currentTargetURL) {
+                    return {
                         name: this.currentChapter.name,
                         artist: this.channel.podcasters.map(podcaster => podcaster.name).join(','),
                         url: this.currentTargetURL,
                         cover: this.channel.img_url
-                    }];
+                    };
                 } else {
                     return [];
                 }
             }
-
         },
         created() {
             const player = this;
@@ -49,6 +48,9 @@
                 this.channel = channel;
                 this.currentChapter = chapter;
                 this.loadTargetURL(chapter);
+            },
+            next() {
+                serverBus.$emit('requestNextChapter');
             },
             loadTargetURL(chapter) {
                 if (chapter.file_path) {

@@ -54,9 +54,10 @@
                 <th>更新时间</th>
                 </thead>
                 <tbody>
-                <tr v-for="chapter in chapters" :key="chapter.res_id">
+                <tr v-for="(chapter, cIndex) in chapters" :key="chapter.res_id"
+                    :class="currentPlayIndex>-1 && currentPlayIndex===cIndex?'playing':''">
                     <td>
-                        <button class="btn btn-link chapter" @click="play(chapter)">
+                        <button class="btn btn-link chapter" @click="play(cIndex)">
                             {{chapter.name}}
                         </button>
                         <span v-if="!chapter.file_path" class="badge badge-danger">收费</span>
@@ -81,15 +82,13 @@
                 page: 1,
                 channel: null,
                 chapters: null,
-                pageSize: 10
+                pageSize: 10,
+                currentPlayIndex: -1
             }
         },
         computed: {
             channelInfoUrl: function () {
                 return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId;
-            },
-            chapterListUrl: function () {
-                return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId + '/programs/page/' + (parseInt(this.page) ? parseInt(this.page) : 1) + '/pagesize/' + this.pageSize;
             },
             numPages: function () {
                 if (this.channel) {
@@ -107,6 +106,15 @@
                 list.loadChannelInfo();
                 list.loadChapters()
             });
+
+            serverBus.$on('requestNextChapter', function () {
+                if (list.currentPlayIndex < list.pageSize - 1) {
+                    const newIndex = list.currentPlayIndex + 1;
+                    list.play(newIndex)
+                } else {
+                    list.nextPage(() => list.play(0))
+                }
+            });
         },
         mounted() {
             this.loadPageFromParent();
@@ -114,6 +122,10 @@
             this.loadChapters()
         },
         methods: {
+            getChapterListUrl: function (previewPage) {
+                return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId + '/programs/page/'
+                    + (previewPage ? previewPage : this.page) + '/pagesize/' + this.pageSize;
+            },
             formatSeconds(seconds) {
                 let secOnly = Math.round(seconds % 60);
                 let minOnly = Math.floor(seconds / 60 % 60);
@@ -126,7 +138,8 @@
                 return hourOnly ? hourOnly + ':' : (minOnly + ':' + secOnly)
             },
             loadPageFromParent() {
-                this.page = parseInt(this.$parent.page);
+                const parentPage = parseInt(this.$parent.page);
+                this.page = parentPage ? parentPage : this.page;
             },
             loadChannelInfo: function () {
                 if (!this.$parent.channelId) return false;
@@ -141,24 +154,25 @@
                         }
                     })
             },
-            loadChapters: function () {
+            loadChapters: function (callback) {
                 if (!this.$parent.channelId) return false;
 
                 this.$cookies.set('page', this.page);
-                this.axios.get(this.chapterListUrl)
+                this.axios.get(this.getChapterListUrl())
                     .then(response => {
                         if (response && response.data && response.data.data) {
                             const chapterList = response.data.data;
                             if (Object.keys(chapterList).length) {
                                 this.chapters = chapterList;
+                                if (callback && typeof callback === "function") callback();
                             }
                         }
                     })
             },
-            nextPage: function () {
+            nextPage: function (callback) {
                 if (this.page < this.numPages) {
                     this.page += 1;
-                    this.loadChapters()
+                    this.loadChapters(callback)
                 }
             },
             prevPage: function () {
@@ -174,8 +188,9 @@
                     this.loadChapters()
                 }
             },
-            play: function (chapter) {
-                serverBus.$emit('play', chapter, this.channel);
+            play: function (index) {
+                serverBus.$emit('play', this.chapters[index], this.channel);
+                this.currentPlayIndex = index;
             }
         }
     }
@@ -220,6 +235,12 @@
 
     table th {
         font-size: 14px;
+    }
+
+    tr.playing {
+        border-left: solid #cc0000 2px;
+        font-weight: 500;
+        background-color: #f7f7f7;
     }
 
     button.chapter {
