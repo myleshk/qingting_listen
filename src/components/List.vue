@@ -1,7 +1,7 @@
 <template>
     <div v-if="channel">
         <div class="text-left list">
-            <div class="row">
+            <div class="row album">
                 <div class="album-image-wrapper">
                     <img class="album" :src="channel.img_url">
                 </div>
@@ -29,7 +29,23 @@
         </div>
 
         <div v-if="chapters" class="text-left">
-            <h6>专辑列表 | 共{{channel.program_count}}个节目 | {{page}}/{{numPages}}页 </h6>
+            <div class="row">
+                <div class="col">
+                    <h6>专辑列表 | 共{{channel.program_count}}个节目 | {{page}}/{{numPages}}页 </h6>
+                </div>
+                <div class="col">
+                    <div class="button-wrapper">
+                        <button :class="'btn btn-link'+(page===1?' disabled':'')" @click="prevPage">上一页</button>
+                        <select class="page-select" v-bind:value="page" @change="jumpToPage">
+                            <option :key="pageNo" v-for="pageNo in numPages">
+                                {{pageNo}}
+                            </option>
+                        </select>
+                        <button :class="'btn btn-link'+(page===numPages?' disabled':'')" @click="nextPage">下一页
+                        </button>
+                    </div>
+                </div>
+            </div>
             <table class="table table-sm">
                 <thead>
                 <th>节目名</th>
@@ -40,7 +56,7 @@
                 <tbody>
                 <tr v-for="chapter in chapters" :key="chapter.res_id">
                     <td>
-                        <button class="btn btn-sm btn-link" @click="play(chapter)">
+                        <button class="btn btn-link chapter" @click="play(chapter)">
                             {{chapter.name}}
                         </button>
                         <span v-if="!chapter.file_path" class="badge badge-danger">收费</span>
@@ -50,22 +66,6 @@
                     <td>{{chapter.update_time}}</td>
                 </tr>
                 </tbody>
-                <tfoot>
-                <tr>
-                    <td colspan="4">
-                        <button v-if="page>1" class="btn-link btn" @click="prevPage">上一页</button>
-                        <template v-for="pageNo in numPages">
-                            <button class="btn btn-link disabled" :key="pageNo" v-if="pageNo === page">
-                                <strong>{{pageNo}}</strong>
-                            </button>
-                            <button v-else class="btn-link btn" :key="pageNo" @click="jumpToPage(pageNo)">
-                                {{pageNo}}
-                            </button>
-                        </template>
-                        <button v-if="page<numPages" class="btn-link btn" @click="nextPage">下一页</button>
-                    </td>
-                </tr>
-                </tfoot>
             </table>
         </div>
     </div>
@@ -80,7 +80,8 @@
             return {
                 page: 1,
                 channel: null,
-                chapters: null
+                chapters: null,
+                pageSize: 10
             }
         },
         computed: {
@@ -88,11 +89,11 @@
                 return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId;
             },
             chapterListUrl: function () {
-                return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId + '/programs/page/' + (parseInt(this.page) ? parseInt(this.page) : 1) + '/pagesize/10';
+                return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId + '/programs/page/' + (parseInt(this.page) ? parseInt(this.page) : 1) + '/pagesize/' + this.pageSize;
             },
             numPages: function () {
                 if (this.channel) {
-                    return Math.ceil(this.channel.program_count / 10);
+                    return Math.ceil(this.channel.program_count / this.pageSize);
                 } else {
                     return 0;
                 }
@@ -129,6 +130,7 @@
             },
             loadChannelInfo: function () {
                 if (!this.$parent.channelId) return false;
+                if ((this.numPages && this.page > this.numPages) || this.page <= 0) this.page = 1;
                 this.axios.get(this.channelInfoUrl)
                     .then(response => {
                         if (response && response.data && response.data.data) {
@@ -165,7 +167,8 @@
                     this.loadChapters()
                 }
             },
-            jumpToPage: function (pageNo) {
+            jumpToPage: function (event) {
+                const pageNo = parseInt(event.target.value);
                 if (pageNo > 0 && pageNo <= this.numPages) {
                     this.page = pageNo;
                     this.loadChapters()
@@ -193,7 +196,7 @@
         border-radius: 1px;
     }
 
-    .row {
+    .row.album {
         margin-top: 15px;
         margin-bottom: 15px;
     }
@@ -212,10 +215,23 @@
     }
 
     table td {
-        font-size: 12px;
+        font-size: 13px;
     }
 
     table th {
         font-size: 14px;
+    }
+
+    button.chapter {
+        padding-top: 0;
+        padding-bottom: 0;
+        padding-left: 0;
+        font-size: 13px;
+    }
+
+    .button-wrapper {
+        bottom: 0;
+        position: absolute;
+        right: 3px;
     }
 </style>
