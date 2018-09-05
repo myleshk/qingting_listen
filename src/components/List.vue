@@ -40,9 +40,10 @@
                 <tbody>
                 <tr v-for="chapter in chapters" :key="chapter.res_id">
                     <td>
-                        <a :href="'/channels/'+channelId+'/programs/'+chapter.id">
+                        <button class="btn btn-sm btn-link" @click="play(chapter)">
                             {{chapter.name}}
-                        </a>
+                        </button>
+                        <span v-if="!chapter.file_path" class="badge badge-danger">收费</span>
                     </td>
                     <td>{{Math.round(chapter.duration/60)}}分{{Math.round(chapter.duration%60)}}秒</td>
                     <td>{{chapter.playcount}}</td>
@@ -54,7 +55,7 @@
                     <td colspan="4">
                         <button v-if="page>1" class="btn-link btn" @click="prevPage">上一页</button>
                         <template v-for="pageNo in numPages">
-                            <button class="btn btn-link text-muted" :key="pageNo" v-if="pageNo === page">
+                            <button class="btn btn-link disabled" :key="pageNo" v-if="pageNo === page">
                                 <strong>{{pageNo}}</strong>
                             </button>
                             <button v-else class="btn-link btn" :key="pageNo" @click="jumpToPage(pageNo)">
@@ -77,7 +78,6 @@
         name: 'List',
         data: function () {
             return {
-                channelId: null,
                 page: 1,
                 channel: null,
                 chapters: null
@@ -85,10 +85,10 @@
         },
         computed: {
             channelInfoUrl: function () {
-                return 'https://i.qingting.fm/wapi/channels/' + this.channelId;
+                return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId;
             },
             chapterListUrl: function () {
-                return 'https://i.qingting.fm/wapi/channels/' + this.channelId + '/programs/page/' + (parseInt(this.page) ? parseInt(this.page) : 1) + '/pagesize/10';
+                return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId + '/programs/page/' + (parseInt(this.page) ? parseInt(this.page) : 1) + '/pagesize/10';
             },
             numPages: function () {
                 if (this.channel) {
@@ -99,29 +99,25 @@
             }
         },
         created() {
-            const channel = this.$cookies.get('channel_id');
-            const page = this.$cookies.get('page');
-
-            if (parseInt(channel)) this.channelId = parseInt(channel);
-            if (parseInt(page)) this.page = parseInt(page);
-
-            const that = this;
+            const list = this;
             // Using the service bus
-            serverBus.$on('urlSubmit', function (data) {
-                console.log(data);
-
-                that.loadChannelInfo();
-                that.loadChapters()
+            serverBus.$on('urlSubmit', function () {
+                list.loadPageFromParent();
+                list.loadChannelInfo();
+                list.loadChapters()
             });
         },
         mounted() {
+            this.loadPageFromParent();
             this.loadChannelInfo();
             this.loadChapters()
         },
-
         methods: {
+            loadPageFromParent() {
+                this.page = parseInt(this.$parent.page);
+            },
             loadChannelInfo: function () {
-                if (!this.channelId) return false;
+                if (!this.$parent.channelId) return false;
                 this.axios.get(this.channelInfoUrl)
                     .then(response => {
                         if (response && response.data && response.data.data) {
@@ -133,7 +129,9 @@
                     })
             },
             loadChapters: function () {
-                if (!this.channelId) return false;
+                if (!this.$parent.channelId) return false;
+
+                this.$cookies.set('page', this.page);
                 this.axios.get(this.chapterListUrl)
                     .then(response => {
                         if (response && response.data && response.data.data) {
@@ -157,11 +155,13 @@
                 }
             },
             jumpToPage: function (pageNo) {
-                console.log(pageNo)
                 if (pageNo > 0 && pageNo <= this.numPages) {
                     this.page = pageNo;
                     this.loadChapters()
                 }
+            },
+            play: function (chapter) {
+                serverBus.$emit('play', chapter);
             }
         }
     }

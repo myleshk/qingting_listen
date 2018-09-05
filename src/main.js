@@ -6,7 +6,6 @@ import axios from 'axios'
 import VueAxios from 'vue-axios'
 import VueCookies from 'vue-cookies'
 
-
 Vue.config.productionTip = false;
 Vue.use(BootstrapVue);
 Vue.use(VueRouter);

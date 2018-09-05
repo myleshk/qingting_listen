@@ -1,18 +1,53 @@
 <template>
     <div class="player">
-        <h1>{{ current_chapter }}</h1>
+        <h1>{{ currentChapter }}</h1>
     </div>
 </template>
 
 <script>
     import {serverBus} from '../main';
+    import tool from '../tool';
 
     export default {
         name: 'Player',
-        props: {
-            current_chapter: String
+        data: function () {
+            return {
+                currentChapter: null,
+                currentTargetURL: null,
+            }
         },
+        created() {
+            const player = this;
+            serverBus.$on('play', function (chapter) {
+                if (chapter) player.play(chapter)
+            });
+        },
+        methods: {
+            play(chapter) {
+                if (this.currentChapter && this.currentChapter.id && this.currentChapter.id === chapter.id
+                    && this.currentChapter.channel_id && this.currentChapter.channel_id === chapter.channel_id) {
+                    // already playing
+                    return;
+                }
 
+                this.currentChapter = chapter;
+                this.loadTargetURL(chapter);
+            },
+            loadTargetURL(chapter) {
+                if (chapter.file_path) {
+                    this.currentTargetURL = 'https://od.qingting.fm/m4a/' + chapter.file_path;
+                } else {
+                    // this program requires auth
+                    if (this.$parent.authData)
+                        this.currentTargetURL = tool.generateSignedURL(
+                            chapter.channel_id,
+                            chapter.id,
+                            this.authData.access_token,
+                            this.authData.qingting_id
+                        )
+                }
+            }
+        }
     }
 </script>
 

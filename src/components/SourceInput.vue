@@ -21,7 +21,7 @@
     import {serverBus} from '../main';
 
     export default {
-        name: 'Source',
+        name: 'SourceInput',
         data: function () {
             return {
                 sourceUrl: "",
@@ -34,10 +34,12 @@
             urlSubmit: function () {
                 if (this.validateUrl()) {
                     this.disableSubmit = true;
-                    this.$cookies.set('channel_id', this.matchGroups.channel)
-                        .set('page', this.matchGroups.page)
+                    this.$parent.channelId = this.matchGroups.channel;
+                    this.$parent.page = this.matchGroups.page;
+                    this.$cookies.set('channel_id', this.$parent.channelId)
+                        .set('page', this.$parent.page)
                         .set('source_url', this.sourceUrl);
-                    serverBus.$emit('urlSubmit', this.matchGroups);
+                    serverBus.$emit('urlSubmit');
                 }
             },
             validateUrl: function () {
