@@ -38,12 +38,12 @@
                     this.currentTargetURL = 'https://od.qingting.fm/m4a/' + chapter.file_path;
                 } else {
                     // this program requires auth
-                    if (this.$parent.authData)
+                    if (this.$parent.accessToken && this.$parent.userId)
                         this.currentTargetURL = tool.generateSignedURL(
                             chapter.channel_id,
                             chapter.id,
-                            this.authData.access_token,
-                            this.authData.qingting_id
+                            this.$parent.accessToken,
+                            this.$parent.userId
                         )
                 }
             }
