@@ -5,7 +5,7 @@
                    title="Source Page URL"
                    placeholder="Input source page URL here."
                    v-model="sourceUrl" @input="validateUrl">
-            <button title="Submit" class="btn input-group-prepend btn-primary" :disabled="disableSubmit"
+            <button title="Submit" class="submit btn input-group-prepend btn-primary" :disabled="disableSubmit"
                     @click="urlSubmit">
                 Submit
             </button>
@@ -75,5 +75,14 @@
 <style scoped>
     div.source-input {
         margin-bottom: 15px;
+    }
+
+    .source-input input {
+        max-width: 500px;
+        margin-left: auto;
+    }
+
+    button.submit {
+        margin-right: auto;
     }
 </style>

@@ -1,17 +1,18 @@
 <template>
-    <div class="account">
-        <div v-if="user" class="alert alert-success" role="alert">
-            您好，{{user.username}}
-        </div>
-        <div v-else-if="$parent.callbackCode" class="alert alert-secondary" role="alert">
-            加载中，请稍候
-        </div>
-        <div v-else class="text-right">
-            <button @click="beginLogin"
-                    class="btn btn-primary">Login
+    <nav class="navbar navbar-expand-lg navbar-light account">
+        <a class="navbar-brand" href="https://www.qingting.fm/"><img src="../assets/logo.png"/></a>
+        <div class="account-wrapper">
+            <template v-if="user">
+                <span class="username">
+                    您好，{{user.username}}
+                </span>
+                <button class="logout btn btn-dark btn-sm" @click="logout">登出</button>
+            </template>
+            <span v-else-if="$parent.callbackCode" class="alert alert-secondary" role="alert">加载中，请稍候</span>
+            <button v-else @click="beginLogin" class="btn btn-primary btn-sm">登录
             </button>
         </div>
-    </div>
+    </nav>
 </template>
 
 <script>
@@ -47,6 +48,10 @@
                             }
                         });
                 }
+            },
+            logout: function () {
+                this.user = null;
+                serverBus.$emit('logout')
             }
         },
         created() {
@@ -57,3 +62,20 @@
         }
     }
 </script>
+
+<style scoped>
+    div.account-wrapper {
+        margin-left: auto;
+    }
+
+    .navbar-brand img {
+        width: 220px;
+    }
+
+    span.username {
+        white-space: nowrap;
+        position: absolute;
+        right: 71px;
+        bottom: 20px;
+    }
+</style>

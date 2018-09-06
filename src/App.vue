@@ -1,7 +1,6 @@
 <template>
     <div id="app" class="container">
         <Account></Account>
-        <img alt="Vue logo" src="./assets/logo.png"/>
         <SourceInput></SourceInput>
         <Player></Player>
         <List></List>
@@ -111,6 +110,10 @@
             const app = this;
             serverBus.$on('play', function () {
                 app.refreshAuth();
+            });
+
+            serverBus.$on('logout', function () {
+                app.saveAuthData({});
             });
         }
     }
