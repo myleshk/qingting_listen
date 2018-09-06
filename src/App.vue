@@ -32,7 +32,8 @@
                 callbackCode: this.$route.query.code,
                 refreshAuthURL: 'https://u2.qingting.fm/u2/api/v4/auth',
                 channelId: null,
-                page: 1
+                page: 1,
+                authExpire: null
             }
         },
         computed: {
@@ -42,7 +43,15 @@
             }
         },
         methods: {
+            currentTS() {
+                return Math.round(new Date().valueOf() / 1000)
+            },
             refreshAuth() {
+                if (this.authExpire > 0 && this.currentTS() < this.authExpire) {
+                    // not expired, skip refreshing
+                    return;
+                }
+
                 this.axios.post(this.refreshAuthURL, {
                     grant_type: 'refresh_token',
                     refresh_token: this.refreshToken,
@@ -68,6 +77,7 @@
                 this.refreshToken = authData.refresh_token;
                 this.accessToken = authData.access_token;
                 this.userId = authData.qingting_id;
+                this.authExpire = authData.expires_in + this.currentTS();
                 this.$cookies.set("user_id", this.userId, authData.expires_in)
                     .set("refresh_token", authData.refresh_token, authData.expires_in)
                     .set("access_token", authData.access_token, authData.expires_in);

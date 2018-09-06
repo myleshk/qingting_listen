@@ -28,7 +28,7 @@
             </div>
         </div>
 
-        <div v-if="chapters" class="text-left">
+        <div class="text-left">
             <div class="row">
                 <div class="col">
                     <h6>专辑列表 | 共{{channel.program_count}}个节目 | {{page}}/{{numPages}}页 </h6>
@@ -54,10 +54,12 @@
                 <th>更新时间</th>
                 </thead>
                 <tbody>
-                <tr v-for="(chapter, cIndex) in chapters" :key="chapter.res_id"
-                    :class="currentPlayIndex>-1 && currentPlayIndex===cIndex?'playing':''">
+                <tr v-if="cIndex>=displayOffset&&cIndex<displayOffset+pageSize"
+                    v-for="(chapter, cIndex) in chapters" :key="chapter.id+'_'+channel.id"
+                    :class="currentPlayIndex>-1 && currentPlayIndex===cIndex?'playing':''"
+                >
                     <td>
-                        <button class="btn btn-link chapter" @click="play(cIndex)">
+                        <button class="btn btn-link chapter" @click="playChapter(cIndex)">
                             {{chapter.name}}
                         </button>
                         <span v-if="!chapter.file_path" class="badge badge-danger">收费</span>
@@ -81,9 +83,10 @@
             return {
                 page: 1,
                 channel: null,
-                chapters: null,
+                chapters: [],
                 pageSize: 10,
-                currentPlayIndex: -1
+                currentPlayIndex: -1,
+                displayOffset: 0
             }
         },
         computed: {
@@ -103,23 +106,35 @@
             // Using the service bus
             serverBus.$on('urlSubmit', function () {
                 list.loadPageFromParent();
-                list.loadChannelInfo();
-                list.loadChapters()
+                list.loadChannelAndChapters();
             });
 
             serverBus.$on('requestNextChapter', function () {
-                if (list.currentPlayIndex < list.pageSize - 1) {
-                    const newIndex = list.currentPlayIndex + 1;
-                    list.play(newIndex)
-                } else {
-                    list.nextPage(() => list.play(0))
+                const nextIndex = list.currentPlayIndex + 1;
+                if (nextIndex >= list.channel.program_count) {
+                    // no next chapter
+                    return false;
                 }
+
+                const nextChapterPage = Math.floor(nextIndex / list.pageSize) + 1;
+                list.page = nextChapterPage;
+                if (list.chapters[nextIndex]) {
+                    // next chapter is ready
+                    list.playChapter(nextIndex);
+                    list.updateDisplayChapters()
+                } else {
+                    // next chapter is not loaded
+                    list.loadChaptersByPage(nextChapterPage, () => {
+                        list.playChapter(nextIndex);
+                        list.updateDisplayChapters()
+                    })
+                }
+
             });
         },
         mounted() {
             this.loadPageFromParent();
-            this.loadChannelInfo();
-            this.loadChapters()
+            this.loadChannelAndChapters();
         },
         methods: {
             getChapterListUrl: function (previewPage) {
@@ -141,7 +156,10 @@
                 const parentPage = parseInt(this.$parent.page);
                 this.page = parentPage ? parentPage : this.page;
             },
-            loadChannelInfo: function () {
+            loadChannelAndChapters: function () {
+                this.loadChannel(this.loadChapters)
+            },
+            loadChannel: function (callback) {
                 if (!this.$parent.channelId) return false;
                 if ((this.numPages && this.page > this.numPages) || this.page <= 0) this.page = 1;
                 this.axios.get(this.channelInfoUrl)
@@ -150,45 +168,63 @@
                             const channelInfo = response.data.data;
                             if (Object.keys(channelInfo).length) {
                                 this.channel = channelInfo;
+                                if (callback && typeof callback === "function") callback()
                             }
                         }
                     })
             },
-            loadChapters: function (callback) {
-                if (!this.$parent.channelId) return false;
+            loadChapters: function () {
+                if (!this.channel) return;
+                this.updateDisplayChapters();
+            },
+            loadChaptersByPage: function (page, callback) {
+                if (!this.channel) return;
+                const offset = (page - 1) * this.pageSize;
 
-                this.$cookies.set('page', this.page);
-                this.axios.get(this.getChapterListUrl())
+                for (let i = 0; i < this.pageSize; i++) {
+                    if (this.chapters[i + offset]) return (callback && typeof callback === "function") ? callback() : null;
+                }
+
+                this.axios.get(this.getChapterListUrl(page))
                     .then(response => {
                         if (response && response.data && response.data.data) {
                             const chapterList = response.data.data;
-                            if (Object.keys(chapterList).length) {
-                                this.chapters = chapterList;
-                                if (callback && typeof callback === "function") callback();
+                            if (chapterList.length) {
+                                chapterList.forEach((chapter, index) => {
+                                    this.$set(this.chapters, index + offset, chapter);
+                                    if (callback && typeof callback === "function") return callback()
+                                });
                             }
                         }
                     })
             },
-            nextPage: function (callback) {
+            updateDisplayChapters: function () {
+                const list = this;
+                this.$cookies.set("page", this.page);
+                this.loadChaptersByPage(this.page, () => {
+                    list.displayOffset = (list.page - 1) * list.pageSize
+                });
+            },
+            nextPage: function () {
                 if (this.page < this.numPages) {
                     this.page += 1;
-                    this.loadChapters(callback)
+                    this.updateDisplayChapters()
                 }
             },
             prevPage: function () {
                 if (this.page > 1) {
                     this.page -= 1;
-                    this.loadChapters()
+                    this.updateDisplayChapters()
                 }
             },
             jumpToPage: function (event) {
                 const pageNo = parseInt(event.target.value);
                 if (pageNo > 0 && pageNo <= this.numPages) {
                     this.page = pageNo;
-                    this.loadChapters()
+                    this.updateDisplayChapters()
                 }
             },
-            play: function (index) {
+            playChapter: function (index) {
                 serverBus.$emit('play', this.chapters[index], this.channel);
                 this.currentPlayIndex = index;
             }

@@ -47,7 +47,7 @@
 
                 this.channel = channel;
                 this.currentChapter = chapter;
-                this.loadTargetURL(chapter);
+                this.loadTargetURL(chapter)
             },
             next() {
                 serverBus.$emit('requestNextChapter');
