@@ -27,38 +27,41 @@
                 sourceUrl: "",
                 UrlIsValid: true,
                 disableSubmit: true,
-                matchGroups: null
+                channelId: null,
+                page: 1
             }
         },
         methods: {
             urlSubmit: function () {
-                if (this.validateUrl()) {
+                this.validateUrl();
+                if (this.UrlIsValid) {
                     this.disableSubmit = true;
-                    this.$parent.channelId = this.matchGroups.channel;
-                    this.$parent.page = this.matchGroups.page;
-                    this.$cookies.set('channel_id', this.$parent.channelId)
-                        .set('page', this.$parent.page)
+                    this.$parent.channelId = this.channelId;
+                    this.$parent.page = this.page;
+                    this.$cookies.set('channel_id', this.channelId)
+                        .set('page', this.page)
                         .set('source_url', this.sourceUrl);
                     serverBus.$emit('urlSubmit');
                 }
             },
             validateUrl: function () {
-                const regex = /[htps]+:\/\/www\.qingting\.fm\/channels\/(?<channel>\d+)(\/(?<page>\d+).*|)/;
-
                 if (this.sourceUrl) {
-                    const match = regex.exec(this.sourceUrl);
-                    if (match && match.groups && match.groups.channel) {
+                    const regex = /^[htps]+:\/\/www\.qingting\.fm\/channels\/(\d+)\/?(\d+)?/;
+                    let [, channel, page] = this.sourceUrl.match(regex) || [];
+                    channel = parseInt(channel);
+                    page = parseInt(page) ? parseInt(page) : 1;
+
+                    if (channel) {
                         // URL is valid QingtingFM page
-                        this.matchGroups = match.groups;
+                        this.channelId = channel;
+                        this.page = page;
                         this.disableSubmit = false;
                         this.UrlIsValid = true;
-                        return true;
-                    } else {
-                        this.UrlIsValid = false;
+                        return;
                     }
-
-                    return false;
                 }
+
+                this.UrlIsValid = false;
                 this.disableSubmit = true;
             },
         },
