@@ -1,10 +1,10 @@
 <template>
     <div class="account">
         <div v-if="user" class="alert alert-success" role="alert">
-            Logged in as {{user.username}}
+            您好，{{user.username}}
         </div>
         <div v-else-if="$parent.callbackCode" class="alert alert-secondary" role="alert">
-            Loading user info...
+            加载中，请稍候
         </div>
         <div v-else class="text-right">
             <button @click="beginLogin"

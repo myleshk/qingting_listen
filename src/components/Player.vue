@@ -14,20 +14,21 @@
             return {
                 currentChapter: null,
                 currentTargetURL: null,
-                channel: null
+                channel: null,
+                audio: []
             }
         },
-        computed: {
-            audio: function () {
+        watch: {
+            currentTargetURL: function (targetURL) {
                 if (this.currentTargetURL) {
-                    return {
+                    this.audio = Object.assign({}, this.audio, {
                         name: this.currentChapter.name,
                         artist: this.channel.podcasters.map(podcaster => podcaster.name).join(','),
-                        url: this.currentTargetURL,
+                        url: targetURL,
                         cover: this.channel.img_url
-                    };
+                    })
                 } else {
-                    return [];
+                    this.audio = Object.assign({}, this.audio, {})
                 }
             }
         },
