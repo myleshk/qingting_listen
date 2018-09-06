@@ -97,6 +97,11 @@
             }
 
             this.loadChannelPage();
+
+            const app = this;
+            serverBus.$on('play', function () {
+                app.refreshAuth();
+            });
         }
     }
 </script>
