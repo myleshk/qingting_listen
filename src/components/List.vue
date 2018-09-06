@@ -11,7 +11,7 @@
                         <span>主播：</span>
                         <template v-for="podcaster in channel.podcasters">
                             <span :key='podcaster.id'>
-                                <img class="avatar" :src="podcaster.img_url">{{podcaster.name}}</span>
+                                <img class="avatar" :src="forceHttps(podcaster.img_url)">{{podcaster.name}}</span>
                         </template>
                     </div>
                     <div>
@@ -137,6 +137,9 @@
             this.loadChannelAndChapters();
         },
         methods: {
+            forceHttps: function (URL) {
+                return URL.replace(/^http:/, 'https:')
+            },
             getChapterListUrl: function (previewPage) {
                 return 'https://i.qingting.fm/wapi/channels/' + this.$parent.channelId + '/programs/page/'
                     + (previewPage ? previewPage : this.page) + '/pagesize/' + this.pageSize;
@@ -168,6 +171,8 @@
                             const channelInfo = response.data.data;
                             if (Object.keys(channelInfo).length) {
                                 this.channel = channelInfo;
+                                // edit image URL
+                                channelInfo.img_url = this.forceHttps(channelInfo.img_url);
                                 if (callback && typeof callback === "function") callback()
                             }
                         }
