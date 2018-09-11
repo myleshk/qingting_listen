@@ -60,10 +60,7 @@
                 })
                     .then(response => {
                         if (response && response.data && response.data.data) {
-                            this.saveAuthData(response.data.data);
-                            serverBus.$emit('userChange', this.userId);
-                        } else {
-                            alert("Please login")
+                            this.saveLoginAuthData(response.data.data);
                         }
                     });
             },
@@ -72,7 +69,11 @@
                 this.refreshToken = this.$cookies.get("refresh_token");
                 this.accessToken = this.$cookies.get("access_token");
             },
-            saveAuthData: function (authData) {
+            /**
+             * This is for both in-house login and WeChat login
+             * @param authData
+             */
+            saveLoginAuthData: function (authData) {
                 this.refreshToken = authData.refresh_token;
                 this.accessToken = authData.access_token;
                 this.userId = authData.qingting_id;
@@ -80,6 +81,7 @@
                 this.$cookies.set("user_id", this.userId, authData.expires_in)
                     .set("refresh_token", authData.refresh_token, authData.expires_in)
                     .set("access_token", authData.access_token, authData.expires_in);
+                serverBus.$emit('userChange', this.userId);
             },
 
             loadChannelPage: function () {
@@ -95,8 +97,7 @@
                 this.axios.get(this.callbackAuthURL)
                     .then(response => {
                         if (response && response.data && response.data.data) {
-                            this.saveAuthData(response.data.data);
-                            serverBus.$emit('userChange', this.userId);
+                            this.saveLoginAuthData(response.data.data);
                         }
                         this.$router.push({path: '/'});
                     })
@@ -113,8 +114,12 @@
             });
 
             serverBus.$on('logout', function () {
-                app.saveAuthData({});
+                app.saveLoginAuthData({});
             });
+
+            serverBus.$on('loginSuccess', function (authData) {
+                app.saveLoginAuthData(authData)
+            })
         }
     }
 </script>
